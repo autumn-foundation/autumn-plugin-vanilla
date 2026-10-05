@@ -4,6 +4,7 @@ use std::borrow::Cow;
 
 use autumn_web::app::AppBuilder;
 use autumn_web::plugin::Plugin;
+use autumn_web::plugin_contract::PluginContract;
 
 use crate::assets::VANILLA_ASSETS;
 
@@ -35,6 +36,14 @@ impl VanillaPlugin {
 impl Plugin for VanillaPlugin {
     fn name(&self) -> Cow<'static, str> {
         Cow::Borrowed(PLUGIN_NAME)
+    }
+
+    fn contract(&self) -> Option<PluginContract> {
+        Some(
+            PluginContract::new(env!("CARGO_PKG_NAME"))
+                .plugin_version(env!("CARGO_PKG_VERSION"))
+                .autumn_web("0.8"),
+        )
     }
 
     fn build(self, app: AppBuilder) -> AppBuilder {

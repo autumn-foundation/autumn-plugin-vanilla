@@ -74,6 +74,25 @@ fn registers_every_rust_behavior() {
 }
 
 #[test]
+fn registers_no_behavior_that_rust_lacks() {
+    let code = code_only(SOURCE);
+    let calls = code.matches("register('").count();
+    assert_eq!(
+        calls,
+        autumn_plugin_vanilla::Behavior::ALL.len(),
+        "each register call has a Behavior variant"
+    );
+}
+
+#[test]
+fn guards_against_dom_clobbering() {
+    let code = code_only(SOURCE);
+    assert!(code.contains("Symbol.for('autumn-plugin-vanilla')"));
+    assert!(code.contains("Document.prototype.querySelector"));
+    assert!(!code.contains("if (window.Vanilla)"));
+}
+
+#[test]
 fn comment_stripper_works() {
     assert_eq!(code_only("a /* b */ c // d\ne"), "a  c \ne");
     assert_eq!(code_only("a /* open"), "a ");

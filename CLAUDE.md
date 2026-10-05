@@ -12,7 +12,7 @@ Declarative vanilla JS behaviors for Autumn 0.8 apps, served through the
 | `src/plugin.rs` | `VanillaPlugin`: `app.plugin_assets(&VANILLA_ASSETS)`. |
 | `src/script.rs` | `vanilla_script()`. |
 | `src/behaviors/` | `Behavior` enum and one typed builder for each behavior. |
-| `src/markup.rs` | Escaped element renderer, `millis` clamp, `container!` macro. |
+| `src/markup.rs` | Escaped element renderer, `millis` clamp, extra-attribute check, `common!` macro. |
 | `tests/` | Rust: builders, serving, conformance, source checks, properties. |
 | `js-tests/` | Browser tests (Playwright, Chromium) for `vanilla.js`. |
 | `js-tests/e2e/` | Real demo server, real htmx, default CSP. |
@@ -37,7 +37,12 @@ Declarative vanilla JS behaviors for Autumn 0.8 apps, served through the
 - Each behavior returns a cleanup that removes its listeners and timers.
 - Catch invalid selectors. One bad element must not stop other elements.
 - Builders escape all values through `markup::element`. Do not build HTML
-  strings anywhere else.
+  strings anywhere else. Extra attribute names go through
+  `markup::valid_extra_name`.
+- Security limits stay: `copy` never reads password or hidden fields,
+  `count` writes only into `[data-vanilla-count-output]`, `autosubmit`
+  submits only a form around its element, `[data-vanilla-ignore]` stops
+  binding, and DOM queries use `Document.prototype` methods.
 - Timer values go through `markup::millis` (clamp to `2_147_483_647`).
 - Browser tests that use time must use the paused fake clock
   (`open(…, { clock })`), not real waits.

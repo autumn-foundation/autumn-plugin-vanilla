@@ -1,15 +1,22 @@
+use autumn_web::Markup;
+use autumn_web::html;
 use autumn_web::reexports::chrono::{DateTime, SecondsFormat, TimeZone, Utc};
-use autumn_web::{Markup, html};
 
 use super::{Behavior, marker};
-use crate::markup::{Attributes, element};
+use crate::markup::{Attributes, common, element};
 
 /// Shows a `<time>` in the browser locale and time zone.
 ///
-/// The server writes UTC text. The browser replaces it with local text and
-/// keeps the server text as the `title`. The locale is the nearest `lang`
-/// attribute, or the browser locale. On a wrapper, the behavior formats each
-/// `<time datetime>` inside it.
+/// The server writes UTC text. The browser replaces it with local text. If
+/// the element has no `title`, the runtime copies the server text to
+/// `title`. The locale is the nearest `lang` attribute, or the browser
+/// locale. The runtime sets the text one time, when it binds. The text does
+/// not update.
+///
+/// To format many `<time datetime>` elements, put
+/// `data-vanilla=(Behavior::LocalTime)` on a container.
+///
+/// The type uses chrono through `autumn_web::reexports::chrono`.
 ///
 /// ```rust
 /// use autumn_plugin_vanilla::{LocalTime, TimeFormat};
@@ -25,6 +32,7 @@ pub struct LocalTime {
     at: DateTime<Utc>,
     format: TimeFormat,
     fallback: Option<String>,
+    extra: Attributes,
 }
 
 /// How [`LocalTime`] formats the time.
@@ -38,7 +46,7 @@ pub enum TimeFormat {
     Date,
     /// Time only, for example `8:00 AM`.
     Time,
-    /// Relative to now, for example `2 hours ago`. Set at page load only.
+    /// Relative to now, for example `2 hours ago`.
     Relative,
 }
 
@@ -53,15 +61,25 @@ impl TimeFormat {
             Self::Relative => "relative",
         }
     }
+
+    /// The `strftime` pattern of the server text.
+    const fn pattern(self) -> &'static str {
+        match self {
+            Self::Date => "%Y-%m-%d",
+            Self::Time => "%H:%M UTC",
+            Self::DateTime | Self::Relative => "%Y-%m-%d %H:%M UTC",
+        }
+    }
 }
 
 impl LocalTime {
-    /// Shows `at`. Any time zone is converted to UTC for the `datetime`.
+    /// Shows `at`. It converts any time zone to UTC for `datetime`.
     pub fn new<Tz: TimeZone>(at: &DateTime<Tz>) -> Self {
         Self {
             at: at.with_timezone(&Utc),
             format: TimeFormat::DateTime,
             fallback: None,
+            extra: Vec::new(),
         }
     }
 
@@ -71,8 +89,8 @@ impl LocalTime {
         self
     }
 
-    /// Sets the text to show without JavaScript. The default is
-    /// `YYYY-MM-DD HH:MM UTC`.
+    /// Sets the text to show without JavaScript. The default is UTC text
+    /// that matches the format, for example `2026-10-05 12:00 UTC`.
     pub fn fallback(mut self, text: impl Into<String>) -> Self {
         self.fallback = Some(text.into());
         self
@@ -91,6 +109,7 @@ impl LocalTime {
         if self.format != TimeFormat::DateTime {
             attributes.push(("data-vanilla-local-time", self.format.name().to_owned()));
         }
+        attributes.extend(self.extra.iter().cloned());
         attributes
     }
 
@@ -100,10 +119,12 @@ impl LocalTime {
         let text = self
             .fallback
             .clone()
-            .unwrap_or_else(|| self.at.format("%Y-%m-%d %H:%M UTC").to_string());
+            .unwrap_or_else(|| self.at.format(self.format.pattern()).to_string());
         element("time", &self.attributes(), html! { (text) })
     }
 }
+
+common!(LocalTime);
 
 impl maud::Render for LocalTime {
     fn render(&self) -> Markup {

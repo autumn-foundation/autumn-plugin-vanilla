@@ -1,9 +1,9 @@
 //! Typed builders. Each builder writes the attributes of one behavior.
 //!
-//! All builders have `attributes()`, for any template engine, and `wrap()`,
-//! which puts content in a `<div>` with those attributes. A behavior acts on
-//! events from its element and from the descendants of that element. Thus
-//! a wrapper and a raw attribute on the element itself work the same.
+//! All builders have `attributes()`, for any template engine, and `attr()`,
+//! for extra attributes. Most builders also have `wrap()`, which puts
+//! content in a `<div>` with those attributes. A behavior acts on events from
+//! its element and from the descendants of that element.
 
 mod autosubmit;
 mod confirm;
@@ -19,8 +19,8 @@ use autumn_web::Markup;
 
 pub use autosubmit::AutoSubmit;
 pub use confirm::Confirm;
-pub use copy::Copy;
-pub use count::{Count, CountMode};
+pub use copy::CopyText;
+pub use count::{Count, CountMode, OutputSlot};
 pub use dismiss::Dismiss;
 pub use local_time::{LocalTime, TimeFormat};
 pub use toggle::Toggle;
@@ -45,7 +45,7 @@ pub enum Behavior {
     Copy,
     /// Shows the character count of a field.
     Count,
-    /// Removes the element on click of a close control or after a time.
+    /// Removes the element when the user clicks a close control, or after a time.
     Dismiss,
     /// Shows a `<time>` in the browser locale and time zone.
     LocalTime,
@@ -55,7 +55,7 @@ pub enum Behavior {
 
 impl Behavior {
     /// All built-in behaviors, in name order.
-    pub const ALL: [Self; 7] = [
+    pub const ALL: &'static [Self] = &[
         Self::AutoSubmit,
         Self::Confirm,
         Self::Copy,

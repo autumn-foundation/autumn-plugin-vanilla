@@ -138,6 +138,15 @@ fn plugin_passes_conformance() {
     assert!(report.passed(), "{}", report.to_text_report());
 }
 
+#[test]
+fn plugin_declares_its_contract() {
+    use autumn_web::plugin::Plugin as _;
+    let contract = VanillaPlugin::new().contract().expect("a contract");
+    let text = format!("{contract:?}");
+    assert!(text.contains("autumn-plugin-vanilla"), "{text}");
+    assert!(text.contains("0.8"), "{text}");
+}
+
 #[tokio::test]
 async fn installing_the_plugin_two_times_is_harmless() {
     let client = TestApp::new()

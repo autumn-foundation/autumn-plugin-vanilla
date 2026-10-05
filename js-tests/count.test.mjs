@@ -45,7 +45,7 @@ test('counts UTF-16 code units, as maxlength does', async () => {
 
 test('works on the field itself with an output selector', async () => {
   const { page } = await open(
-    '<textarea id="t" maxlength="20" data-vanilla="count" data-vanilla-count="#o"></textarea><p id="o"></p>',
+    '<textarea id="t" maxlength="20" data-vanilla="count" data-vanilla-count="#o"></textarea><p id="o" data-vanilla-count-output></p>',
   );
   await page.type('#t', 'hello');
   assert.equal(await text(page, '#o'), '5/20');
@@ -62,11 +62,43 @@ test('updates after a form reset', async () => {
 
 test('a missing field or output does nothing', async () => {
   const { page, errors } = await open(
-    '<div data-vanilla="count"><span data-vanilla-count-output></span></div>' +
+    '<div data-vanilla="count"><span id="o" data-vanilla-count-output>-</span></div>' +
       '<textarea data-vanilla="count" data-vanilla-count="[[["></textarea>',
   );
   await page.type('textarea', 'x');
+  assert.equal(await text(page, '#o'), '-');
   assert.deepEqual(errors, []);
+});
+
+test('never writes into an element without the output marker', async () => {
+  const { page } = await open(
+    '<p id="balance">$100</p><div data-vanilla="count" data-vanilla-count="#balance"><textarea id="t"></textarea></div>' +
+      '<div data-vanilla="count" data-vanilla-count="body"><textarea></textarea></div>',
+  );
+  await page.type('#t', 'abc');
+  assert.equal(await text(page, '#balance'), '$100');
+  assert.equal(await page.locator('textarea').count(), 2, 'the body is intact');
+});
+
+test('a swapped field still counts', async () => {
+  const { page } = await open(
+    '<div id="w" data-vanilla="count"><input id="t" maxlength="9"><span id="o" data-vanilla-count-output></span></div>',
+  );
+  await page.evaluate(() => {
+    const fresh = document.createElement('input');
+    fresh.id = 't2';
+    fresh.maxLength = 9;
+    document.getElementById('t').replaceWith(fresh);
+  });
+  await page.type('#t2', 'ab');
+  assert.equal(await text(page, '#o'), '2/9');
+});
+
+test('skips a hidden input in front of the field', async () => {
+  const { page } = await open(
+    '<div data-vanilla="count"><input type="hidden" name="csrf" value="token"><textarea id="t" maxlength="9"></textarea><span id="o" data-vanilla-count-output></span></div>',
+  );
+  assert.equal(await text(page, '#o'), '0/9');
 });
 
 test('teardown stops updates', async () => {

@@ -68,3 +68,11 @@ test('teardown removes the click handler', async () => {
   await page.click('#b');
   assert.equal(await page.evaluate(() => document.getElementById('m').hidden), true);
 });
+
+test('a class with a space does not throw', async () => {
+  const { page, errors } = await open(
+    '<button id="b" data-vanilla="toggle" data-vanilla-toggle="#p" data-vanilla-toggle-class="a b">T</button><div id="p"></div>',
+  );
+  await page.click('#b');
+  assert.deepEqual(errors, []);
+});

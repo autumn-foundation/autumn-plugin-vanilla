@@ -7,16 +7,27 @@ import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const BIN = process.env.DEMO_BIN
   ?? fileURLToPath(new URL('../../target/debug/examples/vanilla_demo', import.meta.url));
-const PORT = 4000 + Math.floor(Math.random() * 1000);
-const BASE = `http://127.0.0.1:${PORT}`;
-
+let BASE;
 let server;
 let browser;
+
+// Asks the OS for a free port.
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once('error', reject);
+    probe.listen(0, '127.0.0.1', () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
+}
 
 async function waitForServer() {
   for (let i = 0; i < 100; i++) {
@@ -33,8 +44,10 @@ async function waitForServer() {
 
 before(async () => {
   assert.ok(existsSync(BIN), `build the demo first: cargo build --example vanilla_demo (${BIN})`);
+  const port = await freePort();
+  BASE = `http://127.0.0.1:${port}`;
   server = spawn(BIN, [], {
-    env: { ...process.env, AUTUMN_SERVER__PORT: String(PORT), AUTUMN_SERVER__HOST: '127.0.0.1' },
+    env: { ...process.env, AUTUMN_SERVER__PORT: String(port), AUTUMN_SERVER__HOST: '127.0.0.1' },
     stdio: 'ignore',
   });
   await waitForServer();
@@ -85,6 +98,7 @@ test('copy, toggle and count work on the server page', async () => {
   await page.click('#copy button');
   await page.waitForSelector('#copy button[data-vanilla-state=copied]');
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), 'sk-demo-123');
+  assert.equal(await page.textContent('[data-vanilla-live]'), 'Copied');
 
   const details = page.locator('#toggle button').first();
   assert.equal(await details.getAttribute('aria-expanded'), 'false');
@@ -93,6 +107,7 @@ test('copy, toggle and count work on the server page', async () => {
   assert.equal(await details.getAttribute('aria-expanded'), 'true');
 
   assert.equal(await page.textContent('#count output'), '140');
+  assert.equal(await page.getAttribute('#count output', 'aria-live'), 'off');
   await page.type('#bio', 'hello');
   assert.equal(await page.textContent('#count output'), '135');
 });
@@ -133,6 +148,7 @@ test('an htmx flash binds dismiss and copy', async () => {
   assert.match(await page.evaluate(() => navigator.clipboard.readText()), /^flash-\d+$/);
   await flash.locator('button', { hasText: 'Close' }).click();
   assert.equal(await page.locator('#flashes > div').count(), 1);
+  assert.equal(await page.getAttribute('#flashes > div', 'role'), 'status');
 });
 
 test('confirm stops a cancelled submit and allows an accepted one', async () => {
@@ -141,6 +157,7 @@ test('confirm stops a cancelled submit and allows an accepted one', async () => 
   await page.click('#delete');
   await page.waitForTimeout(200);
   assert.equal(new URL(page.url()).pathname, '/');
+  assert.equal(await page.locator('#delete').count(), 1, 'still on the same page');
   page.once('dialog', (d) => d.accept());
   await Promise.all([page.waitForURL((url) => url.pathname === '/deleted'), page.click('#delete')]);
   assert.equal(await page.textContent('#deleted'), 'Deleted.');

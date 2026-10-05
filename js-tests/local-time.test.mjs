@@ -65,3 +65,47 @@ test('an unknown format falls back to date and time', async () => {
   const { page } = await open(time('weird'), NY);
   assert.equal(norm(await page.textContent('#t')), 'Oct 5, 2026, 8:00 AM');
 });
+
+test('a date without a time shows the same calendar day', async () => {
+  const { page } = await open(time('date', '2026-10-05'), NY);
+  assert.equal(norm(await page.textContent('#t')), 'Oct 5, 2026');
+});
+
+test('keeps an existing title', async () => {
+  const { page } = await open(
+    `<time id="t" datetime="${AT}" title="mine" data-vanilla="local-time">server</time>`,
+    NY,
+  );
+  assert.equal(await page.getAttribute('#t', 'title'), 'mine');
+});
+
+test('an invalid lang falls back to the browser locale', async () => {
+  const { page, errors } = await open(`<div lang="not a locale!">${time('date')}</div>`, NY);
+  assert.equal(norm(await page.textContent('#t')), 'Oct 5, 2026');
+  assert.deepEqual(errors, []);
+});
+
+test('relative time picks the larger unit at the edges', async () => {
+  const { page } = await open(
+    time('relative', '2026-10-04T12:20:00Z') +
+      '<time id="u" datetime="2024-10-05T12:00:00Z" data-vanilla="local-time" data-vanilla-local-time="relative">x</time>',
+    { ...NY, clock: new Date(AT) },
+  );
+  assert.equal(await page.textContent('#t'), 'yesterday', '23h40m ago');
+  assert.equal(await page.textContent('#u'), '2 years ago');
+});
+
+test('a time that htmx adds inside a wrapper is formatted', async () => {
+  const { page } = await open('<ul id="w" data-vanilla="local-time" data-vanilla-local-time="date"></ul>', NY);
+  await page.evaluate((at) => {
+    const li = document.createElement('li');
+    const t = document.createElement('time');
+    t.id = 't';
+    t.setAttribute('datetime', at);
+    t.textContent = 'SERVER';
+    li.append(t);
+    document.getElementById('w').append(li);
+    li.dispatchEvent(new CustomEvent('htmx:load', { bubbles: true, detail: { elt: li } }));
+  }, AT);
+  assert.equal(norm(await page.textContent('#t')), 'Oct 5, 2026');
+});

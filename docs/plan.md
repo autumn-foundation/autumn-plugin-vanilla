@@ -60,12 +60,12 @@ Question: "How can this plugin fail its users?" Each answer gives a rule.
   `AppBuilder::plugin_assets`. Files go to `/static/_plugins/<ns>/` with hashed,
   immutable URLs and SRI. `autumn-plugin-motion` 0.2 uses this seam. The
   framework already ships `autumn-widgets.js` (autocomplete, modal, nav).
-  Chromium and Playwright 1.56 are on the test machine. Verus is not.
+  Chromium and Playwright 1.56 are on the test machine. Verus is not available.
 - **Red (feelings).** A Rust developer does not want to write JS for a copy
   button. Typed builders feel safe. A large API feels heavy.
 - **Black (risks).** Browser APIs differ (clipboard needs a secure context).
   Tests that only read the JS text prove little. Late `register` calls can
-  miss elements. Double binding after swaps.
+  miss elements. The runtime can bind an element two times after a swap.
 - **Yellow (benefits).** Zero JS for common tasks. CSP-safe by default.
   Cache-safe upgrades through hashed URLs. Same shape as the Motion plugin,
   so the ecosystem stays consistent.
@@ -110,7 +110,27 @@ No GitHub issue exists for this work. These criteria replace the issue.
 | AC15 | README, crate docs, ADR, example app and CI workflow exist. Text uses ASD-STE100. |
 | AC16 | Line coverage of the Rust crate is 85% or more. |
 
-## 8. Not in scope
+## 8. Review round 1
+
+Four review agents checked the work: runtime correctness, security, Rust
+API, and accessibility with docs and tests. The fixes:
+
+- Runtime: rebind after a swap inside a bound element, teardown without
+  `data-vanilla`, a clobber-safe global and queries, `data-vanilla-ignore`.
+- Security: `copy` refuses password and hidden fields. `count` writes only
+  into a marked output. `autosubmit` submits only its own form.
+- Correctness: one submit on Enter, no submit for an invalid form, a nested
+  `confirm` asks one time, `confirm` covers htmx elements, a date-only
+  `local-time` shows the right day, better relative units.
+- Accessibility: `copy` announces its result. `dismiss` moves focus and
+  sees hover or focus at bind time. The count slot has `aria-live="off"`.
+- Rust: `Copy` is now `CopyText`. `Behavior::ALL` is a slice. All builders
+  have `attr()`. `millis` gives at least 1 ms for a non-zero duration. The
+  plugin declares a `PluginContract`.
+
+25 new browser tests fail on the old runtime and pass on the new one.
+
+## 9. Not in scope
 
 - Modal, tabs, autocomplete, nav: Autumn ships them in `autumn-widgets.js`.
 - `submit-once`: use htmx `hx-disabled-elt`.

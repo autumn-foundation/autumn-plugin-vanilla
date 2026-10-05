@@ -138,7 +138,6 @@ test('a failing behavior does not stop other behaviors', async () => {
   const { page, errors } = await open(
     '<b id="a" data-vanilla="boom probe"></b><b id="b" data-vanilla="probe"></b>',
     {
-      before: {},
       scripts: {
         '/app.js': `${PROBE}\nVanilla.register('boom', function () { throw new Error('boom failed'); });`,
       },
@@ -172,7 +171,7 @@ test('a cleanup that throws does not stop other cleanups', async () => {
 
 test('loading the script two times keeps one runtime', async () => {
   const { page } = await open('<b data-vanilla="probe"></b>', {
-    scripts: { '/app.js': PROBE, '/again.js': 'window.__first = window.Vanilla;' },
+    scripts: { '/app.js': PROBE },
   });
   const same = await page.evaluate(async () => {
     const first = window.Vanilla;
@@ -196,4 +195,56 @@ test('scan accepts no argument and non-elements', async () => {
   });
   assert.equal(binds, 1);
   assert.deepEqual(errors, []);
+});
+
+test('elements inside data-vanilla-ignore do not bind', async () => {
+  const { page } = await open(
+    '<div data-vanilla-ignore><b id="a" data-vanilla="probe"></b></div><b id="b" data-vanilla="probe"></b>',
+    { scripts: { '/app.js': PROBE } },
+  );
+  const marks = await page.evaluate(() => [
+    document.getElementById('a').getAttribute('data-probe'),
+    document.getElementById('b').getAttribute('data-probe'),
+  ]);
+  assert.deepEqual(marks, [null, 'bound']);
+});
+
+test('page markup cannot clobber the runtime', async () => {
+  const { page, errors } = await open(
+    '<a id="Vanilla" name="Vanilla"></a><img name="querySelector"><img name="querySelectorAll">' +
+      '<button id="b" data-vanilla="toggle" data-vanilla-toggle="#m">T</button><div id="m" hidden></div>',
+    { scripts: { '/app.js': PROBE } },
+  );
+  const state = await page.evaluate(() => ({
+    api: typeof window.Vanilla.register,
+    expanded: document.getElementById('b').getAttribute('aria-expanded'),
+  }));
+  assert.deepEqual(state, { api: 'function', expanded: 'false' });
+  await page.click('#b');
+  assert.equal(await page.evaluate(() => document.getElementById('m').hidden), false);
+  assert.deepEqual(errors, []);
+});
+
+test('teardown runs cleanup after the data-vanilla attribute is gone', async () => {
+  const { page } = await open('<b id="a" data-vanilla="probe"></b>', { scripts: { '/app.js': PROBE } });
+  const cleanups = await page.evaluate(() => {
+    const a = document.getElementById('a');
+    a.removeAttribute('data-vanilla');
+    Vanilla.teardown(a);
+    return window.__probe.cleanups;
+  });
+  assert.equal(cleanups, 1);
+});
+
+test('a swap inside a bound element binds it again', async () => {
+  const { page } = await open('<div id="w" data-vanilla="probe"><p id="slot"></p></div>', {
+    scripts: { '/app.js': PROBE },
+  });
+  const state = await page.evaluate(() => {
+    const p = document.createElement('p');
+    document.getElementById('slot').append(p);
+    p.dispatchEvent(new CustomEvent('htmx:load', { bubbles: true, detail: { elt: p } }));
+    return { ...window.__probe };
+  });
+  assert.deepEqual(state, { binds: 2, cleanups: 1 });
 });

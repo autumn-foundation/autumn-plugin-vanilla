@@ -89,3 +89,67 @@ test('runs cleanup for the element and its children on removal', async () => {
   await page.click('#x');
   assert.equal(await page.evaluate(() => window.__cleaned), 1);
 });
+
+test('a close control closes only its nearest dismiss element', async () => {
+  const { page } = await open(
+    '<div id="outer" data-vanilla="dismiss"><div id="inner" data-vanilla="dismiss">' +
+      '<button id="x" data-vanilla-dismiss-close>×</button></div></div>',
+  );
+  await page.click('#x');
+  assert.equal(await page.locator('#inner').count(), 0);
+  assert.equal(await page.locator('#outer').count(), 1);
+});
+
+test('focus that moves between children keeps the timer paused', async () => {
+  const { page } = await open(
+    '<div id="f" data-vanilla="dismiss" data-vanilla-dismiss-after="1000"><input id="a"><input id="b"></div>',
+    { clock: CLOCK },
+  );
+  await page.focus('#a');
+  await page.focus('#b');
+  await page.clock.runFor(5000);
+  assert.equal(await page.locator('#f').count(), 1);
+});
+
+test('a huge time is limited to the timer maximum, not fired at once', async () => {
+  const { page } = await open('<div id="f" data-vanilla="dismiss" data-vanilla-dismiss-after="99999999999">x</div>', {
+    clock: CLOCK,
+  });
+  await page.clock.runFor(60000);
+  assert.equal(await page.locator('#f').count(), 1);
+});
+
+test('focus inside at bind time pauses the timer', async () => {
+  const { page } = await open('<div id="slot"></div>', { clock: CLOCK });
+  await page.evaluate(() => {
+    const f = document.createElement('div');
+    f.id = 'f';
+    f.setAttribute('data-vanilla', 'dismiss');
+    f.setAttribute('data-vanilla-dismiss-after', '1000');
+    const input = document.createElement('input');
+    f.append(input);
+    document.getElementById('slot').append(f);
+    input.focus();
+    f.dispatchEvent(new CustomEvent('htmx:load', { bubbles: true, detail: { elt: f } }));
+  });
+  await page.clock.runFor(5000);
+  assert.equal(await page.locator('#f').count(), 1);
+});
+
+test('focus moves to the next sibling when the focused element closes', async () => {
+  const { page } = await open(
+    '<div id="f" data-vanilla="dismiss">Saved <button id="x" data-vanilla-dismiss-close>×</button></div><p id="next">next</p>',
+  );
+  await page.click('#x');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'next');
+  assert.equal(await page.getAttribute('#next', 'tabindex'), '-1');
+});
+
+test('focus moves to the dismiss-focus target', async () => {
+  const { page } = await open(
+    '<main><h1 id="top" tabindex="-1">Top</h1><div id="f" data-vanilla="dismiss" data-vanilla-dismiss-focus="#top">' +
+      '<button id="x" data-vanilla-dismiss-close>×</button></div><p>after</p></main>',
+  );
+  await page.click('#x');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'top');
+});

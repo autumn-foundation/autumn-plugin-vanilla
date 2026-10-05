@@ -29,6 +29,7 @@ test('a dismissed dialog stops the form submit', async () => {
   assert.equal(await message, 'Delete it?');
   await page.waitForTimeout(100);
   assert.deepEqual(requests, []);
+  assert.equal(await page.locator('#f').count(), 1, 'still on the same page');
 });
 
 test('an accepted dialog lets the form submit', async () => {
@@ -90,4 +91,32 @@ test('teardown removes the handlers', async () => {
   await page.evaluate(() => Vanilla.teardown(document.getElementById('f')));
   await Promise.all([page.waitForURL('**/submit?q=1'), page.click('#go')]);
   assert.deepEqual(requests, ['/submit?q=1']);
+});
+
+test('asks before an htmx button sends its request', async () => {
+  const { page } = await open(
+    '<form id="f" data-vanilla="confirm"><button id="hx" type="button" hx-post="/submit-x">Delete</button></form>',
+    {
+      scripts: {
+        '/htmx-like.js': `window.__sent = 0;
+          document.getElementById('hx').addEventListener('click', () => { window.__sent += 1; });`,
+      },
+    },
+  );
+  let asked = 0;
+  page.on('dialog', async (d) => { asked += 1; await d.dismiss(); });
+  await page.click('#hx');
+  assert.equal(asked, 1);
+  assert.equal(await page.evaluate(() => window.__sent), 0);
+});
+
+test('a nested confirm asks one time, with its own message', async () => {
+  const { page } = await open(
+    `<div data-vanilla="confirm" data-vanilla-confirm="outer">${FORM('data-vanilla="confirm" data-vanilla-confirm="inner"')}</div>`,
+  );
+  const messages = [];
+  page.on('dialog', async (d) => { messages.push(d.message()); await d.dismiss(); });
+  await page.click('#go');
+  await page.waitForTimeout(100);
+  assert.deepEqual(messages, ['inner']);
 });

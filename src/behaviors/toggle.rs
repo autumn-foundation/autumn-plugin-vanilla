@@ -1,13 +1,14 @@
 use autumn_web::Markup;
 
 use super::{Behavior, button, marker};
-use crate::markup::{Attributes, container};
+use crate::markup::{Attributes, common};
 
 /// Shows or hides target elements on click.
 ///
 /// Without a class, it toggles the `hidden` property. With a class, it
-/// toggles that class. The element gets `aria-expanded`. All targets get the
-/// opposite of the first target's state.
+/// toggles that class. All targets get the opposite of the first target's
+/// state. The control gets `aria-expanded`, so put this behavior on a
+/// `<button>`. There is no `wrap`.
 ///
 /// ```rust
 /// use autumn_plugin_vanilla::Toggle;
@@ -21,14 +22,18 @@ use crate::markup::{Attributes, container};
 pub struct Toggle {
     target: String,
     class: Option<String>,
+    extra: Attributes,
 }
 
 impl Toggle {
     /// Toggles all matches of a CSS selector.
+    ///
+    /// The selector is trusted input. Do not make it from user data.
     pub fn target(selector: impl Into<String>) -> Self {
         Self {
             target: selector.into(),
             class: None,
+            extra: Vec::new(),
         }
     }
 
@@ -48,6 +53,7 @@ impl Toggle {
         if let Some(class) = &self.class {
             attributes.push(("data-vanilla-toggle-class", class.clone()));
         }
+        attributes.extend(self.extra.iter().cloned());
         attributes
     }
 
@@ -63,10 +69,10 @@ impl Toggle {
     }
 }
 
-container!(Toggle);
+common!(Toggle);
 
 /// The id in a selector of the form `#id`, or `None`.
-fn plain_id(selector: &str) -> Option<&str> {
+pub(crate) fn plain_id(selector: &str) -> Option<&str> {
     let id = selector.strip_prefix('#')?;
     let mut chars = id.chars();
     let first = chars.next()?;

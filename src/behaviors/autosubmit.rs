@@ -1,12 +1,16 @@
 use std::time::Duration;
 
 use super::{Behavior, marker};
-use crate::markup::{Attributes, container, millis};
+use crate::markup::{Attributes, common, millis};
 
 /// Submits the form when a field changes.
 ///
-/// It calls `form.requestSubmit()`, so validation, `submit` handlers and
-/// htmx run. The form is the field's form, or the closest form.
+/// It calls `form.requestSubmit()`, so `submit` handlers, `confirm` and htmx
+/// run. An invalid form does not submit. In `change` mode, text fields do
+/// not submit: use [`on_input`](Self::on_input) for them.
+///
+/// A submit that loads a new page is a change of context (WCAG 3.2.2). Use
+/// it with an htmx partial swap, or tell the user before the field.
 ///
 /// ```rust
 /// use std::time::Duration;
@@ -24,6 +28,7 @@ use crate::markup::{Attributes, container, millis};
 pub struct AutoSubmit {
     on_input: bool,
     delay: Option<Duration>,
+    extra: Attributes,
 }
 
 impl AutoSubmit {
@@ -32,18 +37,20 @@ impl AutoSubmit {
         Self {
             on_input: false,
             delay: None,
+            extra: Vec::new(),
         }
     }
 
-    /// Submits on `input` events (each key press), not on `change`. Use it
-    /// with [`delay`](Self::delay).
+    /// Submits on `input` events (each change to the value), not on
+    /// `change`. Use it with [`delay`](Self::delay).
     pub const fn on_input(mut self) -> Self {
         self.on_input = true;
         self
     }
 
     /// Waits `duration` after the last event, then submits. The value is in
-    /// whole milliseconds, clamped to `2_147_483_647`.
+    /// whole milliseconds. A non-zero value gives at least 1 ms. The builder
+    /// limits the value to `2_147_483_647`.
     pub const fn delay(mut self, duration: Duration) -> Self {
         self.delay = Some(duration);
         self
@@ -59,8 +66,9 @@ impl AutoSubmit {
         if let Some(delay) = self.delay {
             attributes.push(("data-vanilla-autosubmit-delay", millis(delay).to_string()));
         }
+        attributes.extend(self.extra.iter().cloned());
         attributes
     }
 }
 
-container!(AutoSubmit);
+common!(AutoSubmit, wrap);

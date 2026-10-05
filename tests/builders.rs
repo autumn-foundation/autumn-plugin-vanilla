@@ -6,7 +6,8 @@
 use std::time::Duration;
 
 use autumn_plugin_vanilla::{
-    AutoSubmit, Behavior, Confirm, Copy, Count, CountMode, Dismiss, LocalTime, TimeFormat, Toggle,
+    AutoSubmit, Behavior, Confirm, CopyText, Count, CountMode, Dismiss, LocalTime, TimeFormat,
+    Toggle,
 };
 use autumn_web::html;
 use autumn_web::reexports::chrono::{FixedOffset, TimeZone as _, Utc};
@@ -39,7 +40,7 @@ fn behavior_renders_as_an_attribute_value() {
 
 #[test]
 fn copy_button_from_a_selector() {
-    let html = Copy::selector("#api-key")
+    let html = CopyText::selector("#api-key")
         .button(html! { "Copy" })
         .into_string();
     assert_eq!(
@@ -50,7 +51,7 @@ fn copy_button_from_a_selector() {
 
 #[test]
 fn copy_wrap_with_literal_text() {
-    let html = Copy::text("cargo add x")
+    let html = CopyText::text("cargo add x")
         .wrap(html! { button { "Copy" } })
         .into_string();
     assert_eq!(
@@ -86,11 +87,11 @@ fn toggle_with_a_class_and_a_complex_selector() {
 fn dismiss_wrap_with_a_timer_and_close_button() {
     let html = Dismiss::new()
         .after(Duration::from_secs(5))
-        .wrap(html! { "Saved " (Dismiss::close_button(html! { "×" })) })
+        .wrap(html! { "Saved " (Dismiss::close_button("Close")) })
         .into_string();
     assert_eq!(
         html,
-        r#"<div data-vanilla="dismiss" data-vanilla-dismiss-after="5000">Saved <button type="button" data-vanilla-dismiss-close>×</button></div>"#
+        r#"<div data-vanilla="dismiss" data-vanilla-dismiss-after="5000">Saved <button type="button" data-vanilla-dismiss-close>Close</button></div>"#
     );
 }
 
@@ -149,7 +150,7 @@ fn count_wrap_with_an_output_slot() {
         .into_string();
     assert_eq!(
         html,
-        r#"<div data-vanilla="count" data-vanilla-count-mode="remaining"><textarea maxlength="280"></textarea><output data-vanilla-count-output></output></div>"#
+        r#"<div data-vanilla="count" data-vanilla-count-mode="remaining"><textarea maxlength="280"></textarea><output data-vanilla-count-output="" aria-live="off"></output></div>"#
     );
 }
 
@@ -210,7 +211,7 @@ fn time_format_names_match_the_runtime() {
 
 #[test]
 fn builders_escape_markup_in_values() {
-    let html = Copy::text("</button><script>alert(1)</script>")
+    let html = CopyText::text("</button><script>alert(1)</script>")
         .button(html! { "x" })
         .into_string();
     assert!(!html.contains("<script>"), "{html}");
@@ -226,6 +227,114 @@ fn local_time_renders_inline_in_maud() {
     let html = html! { p { (LocalTime::new(&at).format(TimeFormat::Time)) } }.into_string();
     assert_eq!(
         html,
-        r#"<p><time datetime="2026-01-02T03:04:05Z" data-vanilla="local-time" data-vanilla-local-time="time">2026-01-02 03:04 UTC</time></p>"#
+        r#"<p><time datetime="2026-01-02T03:04:05Z" data-vanilla="local-time" data-vanilla-local-time="time">03:04 UTC</time></p>"#
     );
+}
+
+#[test]
+fn builders_accept_safe_extra_attributes() {
+    let html = Toggle::target("#m")
+        .attr("id", "menu-button")
+        .attr("class", "btn")
+        .button(html! { "M" })
+        .into_string();
+    assert_eq!(
+        html,
+        r##"<button type="button" data-vanilla="toggle" data-vanilla-toggle="#m" id="menu-button" class="btn" aria-controls="m">M</button>"##
+    );
+}
+
+#[test]
+fn builders_refuse_unsafe_extra_attribute_names() {
+    let html = Confirm::new("x")
+        .attr("onclick", "alert(1)")
+        .attr("style", "color:red")
+        .attr("data-vanilla", "copy")
+        .attr("bad name", "x")
+        .wrap(html! {})
+        .into_string();
+    assert_eq!(
+        html,
+        r#"<div data-vanilla="confirm" data-vanilla-confirm="x"></div>"#
+    );
+}
+
+#[test]
+fn copy_messages_for_screen_readers() {
+    let attrs = CopyText::text("t")
+        .messages("Kopiert", "Fehler")
+        .attributes();
+    assert_eq!(
+        attrs,
+        [
+            ("data-vanilla", "copy".to_owned()),
+            ("data-vanilla-copy-text", "t".to_owned()),
+            ("data-vanilla-copy-done", "Kopiert".to_owned()),
+            ("data-vanilla-copy-failed", "Fehler".to_owned()),
+        ]
+    );
+}
+
+#[test]
+fn count_ignores_an_empty_output_selector() {
+    assert_eq!(
+        Count::new().output("  ").attributes(),
+        [("data-vanilla", "count".to_owned())]
+    );
+}
+
+#[test]
+fn count_mode_names_match_the_runtime() {
+    assert_eq!(CountMode::Used.name(), "used");
+    assert_eq!(CountMode::Remaining.name(), "remaining");
+}
+
+#[test]
+fn output_slot_renders_alone_with_an_id() {
+    let html = Count::output_slot()
+        .attr("id", "bio-count")
+        .render()
+        .into_string();
+    assert_eq!(
+        html,
+        r#"<output data-vanilla-count-output="" aria-live="off" id="bio-count"></output>"#
+    );
+    let inline = html! { (Count::output_slot()) }.into_string();
+    assert_eq!(
+        inline,
+        r#"<output data-vanilla-count-output="" aria-live="off"></output>"#
+    );
+}
+
+#[test]
+fn dismiss_focus_target_and_sub_millisecond_timer() {
+    let attrs = Dismiss::new()
+        .after(Duration::from_micros(500))
+        .focus("#main")
+        .attributes();
+    assert_eq!(
+        attrs,
+        [
+            ("data-vanilla", "dismiss".to_owned()),
+            ("data-vanilla-dismiss-after", "1".to_owned()),
+            ("data-vanilla-dismiss-focus", "#main".to_owned()),
+        ]
+    );
+}
+
+#[test]
+fn local_time_fallback_matches_the_format() {
+    let at = Utc
+        .with_ymd_and_hms(2026, 10, 5, 12, 0, 0)
+        .single()
+        .expect("valid date");
+    let text = |format| {
+        let html = LocalTime::new(&at).format(format).render().into_string();
+        let start = html.find('>').expect("open tag") + 1;
+        html[start..html.len() - "</time>".len()].to_owned()
+    };
+    assert_eq!(text(TimeFormat::DateTime), "2026-10-05 12:00 UTC");
+    assert_eq!(text(TimeFormat::Date), "2026-10-05");
+    assert_eq!(text(TimeFormat::Time), "12:00 UTC");
+    assert_eq!(text(TimeFormat::Relative), "2026-10-05 12:00 UTC");
 }

@@ -14,7 +14,7 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use autumn_plugin_vanilla::{
-    AutoSubmit, Confirm, Copy, Count, CountMode, Dismiss, LocalTime, TimeFormat, Toggle,
+    AutoSubmit, Confirm, CopyText, Count, CountMode, Dismiss, LocalTime, TimeFormat, Toggle,
     VanillaPlugin, vanilla_script,
 };
 use autumn_web::assets::asset_url;
@@ -65,9 +65,10 @@ async fn index() -> Markup {
 
         section id="copy" {
             h2 { "copy" }
+            label for="api-key" { "API key " }
             input id="api-key" value="sk-demo-123" readonly;
             " "
-            (Copy::selector("#api-key").button(html! { "Copy key" }))
+            (CopyText::selector("#api-key").button(html! { "Copy key" }))
         }
 
         section id="toggle" {
@@ -85,10 +86,10 @@ async fn index() -> Markup {
                 "Add flash"
             }
             div id="flashes" {
-                (Dismiss::new().wrap(html! {
+                (Dismiss::new().attr("role", "status").wrap(html! {
                     div class="flash" {
                         "Static flash. "
-                        (Dismiss::close_button(html! { "Close" }))
+                        (Dismiss::close_button("Close"))
                     }
                 }))
             }
@@ -121,6 +122,7 @@ async fn index() -> Markup {
             h2 { "autosubmit" }
             form action="/search" method="get" hx-get="/search" hx-target="#results" {
                 (AutoSubmit::new().wrap(html! {
+                    label for="sort" { "Sort " }
                     select id="sort" name="sort" {
                         option value="new" { "Newest" }
                         option value="old" { "Oldest" }
@@ -133,8 +135,10 @@ async fn index() -> Markup {
         section id="count" {
             h2 { "count" }
             (Count::new().mode(CountMode::Remaining).wrap(html! {
-                textarea id="bio" name="bio" maxlength="140" {}
-                " " (Count::output_slot()) " left"
+                label for="bio" { "Bio" }
+                br;
+                textarea id="bio" name="bio" maxlength="140" aria-describedby="bio-count" {}
+                " " span id="bio-count" { (Count::output_slot()) " characters left" }
             }))
         }
 
@@ -151,12 +155,13 @@ async fn flash() -> Markup {
     let n = NEXT.fetch_add(1, Ordering::Relaxed);
     Dismiss::new()
         .after(std::time::Duration::from_secs(8))
+        .attr("role", "status")
         .wrap(html! {
             div class="flash" {
                 "Flash " (n) ". It closes in 8 seconds. "
-                (Copy::text(format!("flash-{n}")).button(html! { "Copy id" }))
+                (CopyText::text(format!("flash-{n}")).button(html! { "Copy id" }))
                 " "
-                (Dismiss::close_button(html! { "Close" }))
+                (Dismiss::close_button("Close"))
             }
         })
 }

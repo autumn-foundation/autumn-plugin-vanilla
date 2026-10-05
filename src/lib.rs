@@ -4,7 +4,7 @@
 //! write attributes with the typed builders:
 //!
 //! ```rust,no_run
-//! use autumn_plugin_vanilla::{Copy, Toggle, VanillaPlugin, vanilla_script};
+//! use autumn_plugin_vanilla::{CopyText, Toggle, VanillaPlugin, vanilla_script};
 //! use autumn_web::prelude::*;
 //!
 //! #[get("/")]
@@ -14,7 +14,7 @@
 //!             head { (vanilla_script()) }
 //!             body {
 //!                 input id="key" value="sk-123" readonly;
-//!                 (Copy::selector("#key").button(html! { "Copy" }))
+//!                 (CopyText::selector("#key").button(html! { "Copy" }))
 //!                 (Toggle::target("#more").button(html! { "More" }))
 //!                 div id="more" hidden { "Details" }
 //!             }
@@ -38,6 +38,13 @@
 //!
 //! Built-in behaviors: see [`Behavior`]. Add your own in a same-origin
 //! script: `Vanilla.register("name", (el) => { …; return cleanup; })`.
+//!
+//! # Security
+//!
+//! The runtime binds any `data-vanilla` element in the page. If your app
+//! shows user HTML, the sanitizer must remove `data-vanilla*` attributes,
+//! or you must put that HTML inside `[data-vanilla-ignore]`. Selectors that
+//! you give to the builders are trusted input.
 
 mod assets;
 mod behaviors;
@@ -47,7 +54,8 @@ mod script;
 
 pub use assets::{ASSETS_NAMESPACE, VANILLA_ASSETS, VANILLA_JS};
 pub use behaviors::{
-    AutoSubmit, Behavior, Confirm, Copy, Count, CountMode, Dismiss, LocalTime, TimeFormat, Toggle,
+    AutoSubmit, Behavior, Confirm, CopyText, Count, CountMode, Dismiss, LocalTime, OutputSlot,
+    TimeFormat, Toggle,
 };
 pub use markup::Attributes;
 pub use plugin::{PLUGIN_NAME, VanillaPlugin};

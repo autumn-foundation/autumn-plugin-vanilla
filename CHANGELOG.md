@@ -12,5 +12,8 @@
   `htmx:beforeCleanupElement`.
 - Behaviors: `copy`, `toggle`, `dismiss`, `confirm`, `autosubmit`, `count`,
   `local-time`.
-- Typed builders: `Copy`, `Toggle`, `Dismiss`, `Confirm`, `AutoSubmit`,
-  `Count`, `LocalTime`, and the `Behavior` enum.
+- Typed builders: `CopyText`, `Toggle`, `Dismiss`, `Confirm`, `AutoSubmit`,
+  `Count` (with `OutputSlot`), `LocalTime`, and the `Behavior` enum. Each
+  builder has `attr()` for safe extra attributes.
+- `data-vanilla-ignore`: nothing inside it binds. Use it around user HTML.
+- `VanillaPlugin` declares a `PluginContract` for autumn-web `0.8`.
