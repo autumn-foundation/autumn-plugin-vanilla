@@ -1,0 +1,6 @@
+body { font: 16px/1.5 system-ui, sans-serif; max-width: 42rem; margin: 2rem auto; padding: 0 1rem; }
+section { border-top: 1px solid #ddd; padding: 1rem 0; }
+.flash { background: #eef7ee; border: 1px solid #9c9; padding: .5rem 1rem; margin: .5rem 0; }
+.open { outline: 2px solid #36c; }
+[data-vanilla-state="copied"]::after { content: " ✓ copied"; }
+[data-vanilla-state="failed"]::after { content: " ✗ failed"; }

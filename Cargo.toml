@@ -1,0 +1,38 @@
+[package]
+name = "autumn-plugin-vanilla"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Autumn plugin: declarative vanilla JS behaviors for Maud + htmx apps. No npm, no bundler."
+license = "Apache-2.0"
+repository = "https://github.com/autumn-foundation/autumn-plugin-vanilla"
+keywords = ["autumn", "javascript", "htmx", "maud", "plugin"]
+categories = ["web-programming"]
+exclude = [".github/", "docs/", "js-tests/", "package.json", "package-lock.json", "CLAUDE.md", "clippy.toml"]
+
+[dependencies]
+autumn-web = { version = "0.8", default-features = false, features = ["maud"] }
+maud = "0.27"
+
+[dev-dependencies]
+autumn-web = { version = "0.8", default-features = false, features = ["maud", "htmx", "embed-assets"] }
+base64 = "0.22"
+proptest = "1"
+serde = { version = "1", features = ["derive"] }
+sha2 = "0.10"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+module_name_repetitions = "allow"
+redundant_pub_crate = "allow"
