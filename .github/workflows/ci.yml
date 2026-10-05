@@ -4,56 +4,149 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
 
+# Actions are pinned to commit SHAs. The comment shows the tag.
 jobs:
-  rust:
-    name: Rust (fmt, clippy, test, docs, coverage)
+  lint:
+    name: Lint (fmt, clippy, docs, JS syntax)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          components: rustfmt, clippy, llvm-tools-preview
-      - uses: Swatinem/rust-cache@v2
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
       - name: Format
         run: cargo fmt --all --check
-      - name: Clippy
-        run: cargo clippy --all-targets -- -D warnings
-      - name: Test
-        run: cargo test
+      - name: Clippy (pedantic + nursery)
+        run: cargo clippy --all-targets --locked -- -D warnings
       - name: Docs
-        run: cargo doc --no-deps
+        run: cargo doc --no-deps --locked
         env:
           RUSTDOCFLAGS: -D warnings
-      - uses: taiki-e/install-action@cargo-llvm-cov
-      - name: Coverage (85% line minimum)
-        run: cargo llvm-cov --all-targets --fail-under-lines 85
+      - name: JS syntax
+        run: |
+          node --check assets/vanilla.js
+          node --check static/js/app.js
 
-  browser:
-    name: Browser (Chromium, unit + end-to-end)
+  test:
+    name: Rust tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
+      - name: Test (unit, integration, property, doc)
+        run: cargo test --locked
+
+  msrv:
+    name: MSRV (Rust 1.88)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: "1.88"
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
+      - name: Check the library
+        run: cargo check --lib --locked
+
+  coverage:
+    name: Coverage (85% line minimum)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
+      - uses: taiki-e/install-action@24b35e792c4eb272ee06051198c72db034fd0be3 # cargo-llvm-cov
+      - name: Coverage
+        run: cargo llvm-cov --all-targets --locked --fail-under-lines 85
+
+  package:
+    name: Package (publish dry run)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
+      - name: Publish dry run
+        run: cargo publish --dry-run --locked
+      - name: Package excludes test and tool files
+        run: |
+          files=$(cargo package --list --locked)
+          for path in js-tests/ node_modules/ .github/ CLAUDE.md package.json docs/; do
+            if echo "$files" | grep -q "^$path"; then
+              echo "::error::$path must not be in the package"
+              exit 1
+            fi
+          done
+
+  browser:
+    name: Browser tests (Chromium, unit + end-to-end)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Install Playwright
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
+      - name: Install Playwright and Chromium
         run: |
           npm ci
           npx playwright install --with-deps chromium
-      - name: Browser tests
+      - name: Browser tests (strict CSP, fake clock)
         run: npm test
       - name: Build the demo
-        run: cargo build --example vanilla_demo
-      - name: End-to-end tests
+        run: cargo build --example vanilla_demo --locked
+      - name: End-to-end tests (real server, htmx, default CSP, SRI)
         run: npm run test:e2e
+
+  # One stable check name for branch protection.
+  ci-pass:
+    name: CI pass
+    if: always()
+    needs: [lint, test, msrv, coverage, package, browser]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All jobs passed
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" = "true" ]; then
+            echo "::error::A required job did not pass"
+            exit 1
+          fi
