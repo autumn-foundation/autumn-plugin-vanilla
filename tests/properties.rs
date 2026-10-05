@@ -5,6 +5,9 @@
 //! Invariant 2: a duration always renders as an integer in
 //! `0..=2_147_483_647`, the largest delay `setTimeout` accepts.
 
+// Test helpers fail with a panic on purpose.
+#![allow(clippy::expect_used, clippy::panic)]
+
 use std::time::Duration;
 
 use autumn_plugin_vanilla::{AutoSubmit, Confirm, Copy, Dismiss, Toggle};
@@ -23,10 +26,10 @@ fn unescape(value: &str) -> String {
 
 /// The value of attribute `name` in `html`, still escaped.
 fn attr<'a>(html: &'a str, name: &str) -> &'a str {
-    let start = html
+    let at = html
         .find(&format!(" {name}=\""))
-        .map(|i| i + name.len() + 3)
         .unwrap_or_else(|| panic!("{name} in {html}"));
+    let start = at + name.len() + 3;
     let len = html[start..].find('"').expect("closing quote");
     &html[start..start + len]
 }

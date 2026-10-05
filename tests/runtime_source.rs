@@ -1,6 +1,9 @@
 //! Static checks on `assets/vanilla.js`. Browser tests in `js-tests/` check
 //! the behavior. These tests check what a browser test cannot see.
 
+// Test helpers fail with a panic on purpose.
+#![allow(clippy::expect_used, clippy::panic)]
+
 const SOURCE: &str = include_str!("../assets/vanilla.js");
 
 /// Removes `//` line comments and `/* */` block comments. The runtime has

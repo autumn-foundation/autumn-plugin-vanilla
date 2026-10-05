@@ -1,5 +1,8 @@
 //! `VanillaPlugin` serves `vanilla.js` through the `plugin_assets` seam.
 
+// Test helpers fail with a panic on purpose.
+#![allow(clippy::expect_used, clippy::panic)]
+
 use autumn_plugin_vanilla::{
     ASSETS_NAMESPACE, PLUGIN_NAME, VANILLA_ASSETS, VANILLA_JS, VanillaPlugin, vanilla_script,
 };
@@ -61,15 +64,15 @@ fn url_is_fingerprinted() {
 
 #[tokio::test]
 async fn serves_the_fingerprinted_url_immutable() {
-    let response = client()
-        .get(&VANILLA_ASSETS.url(VANILLA_JS))
-        .send()
-        .await;
+    let response = client().get(&VANILLA_ASSETS.url(VANILLA_JS)).send().await;
     response
         .assert_ok()
         .assert_header("content-type", JS)
         .assert_header("cache-control", IMMUTABLE);
-    assert_eq!(response.body.as_ref(), include_bytes!("../assets/vanilla.js"));
+    assert_eq!(
+        response.body.as_slice(),
+        include_bytes!("../assets/vanilla.js")
+    );
 }
 
 #[tokio::test]
@@ -139,7 +142,7 @@ fn plugin_passes_conformance() {
 async fn installing_the_plugin_two_times_is_harmless() {
     let client = TestApp::new()
         .plugin(VanillaPlugin::new())
-        .plugin(VanillaPlugin::default())
+        .plugin(VanillaPlugin::new())
         .build();
     client
         .get(&VANILLA_ASSETS.url(VANILLA_JS))
@@ -178,8 +181,12 @@ async fn a_page_with_the_script_loads_it_from_the_plugin() {
         .header("content-security-policy")
         .expect("default CSP is set")
         .to_owned();
-    assert!(csp.contains("script-src 'self'"), "{csp}");
-    assert!(!csp.contains("unsafe-inline"), "{csp}");
+    let script_src = csp
+        .split(';')
+        .map(str::trim)
+        .find(|directive| directive.starts_with("script-src"))
+        .unwrap_or_else(|| panic!("script-src in {csp}"));
+    assert_eq!(script_src, "script-src 'self'", "no inline or eval: {csp}");
     let src = VANILLA_ASSETS.url(VANILLA_JS);
     assert!(page.text().contains(&src), "{}", page.text());
     client.get(&src).send().await.assert_ok();

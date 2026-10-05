@@ -109,7 +109,7 @@ test('falls back to execCommand when the Clipboard API is absent', async () => {
     {
       init: `Object.defineProperty(navigator, 'clipboard', { value: undefined });
              window.__copied = null;
-             document.addEventListener('copy', (e) => { window.__copied = document.getSelection().toString(); });`,
+             document.addEventListener('copy', (e) => { window.__copied = e.target.value; });`,
     },
   );
   await page.click('#b');

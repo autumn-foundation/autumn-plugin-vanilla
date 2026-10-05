@@ -31,7 +31,7 @@ export async function close() {
  * - `before`: map of path → JS. Each loads before `vanilla.js`, deferred.
  * - `context`: Playwright context options (locale, timezoneId, …).
  * - `lang`: `lang` attribute of `<html>`.
- * - `clock`: `Date` for a fake clock, installed before load.
+ * - `clock`: `Date` for a fake, paused clock, installed before load.
  * - `init`: JS that runs before any page script (`addInitScript`).
  *
  * Returns `{ page, context, requests, errors, violations }`.
@@ -83,7 +83,11 @@ export async function open(body, options = {}) {
 
   await page.addInitScript(CSP_WATCH);
   if (options.init) await page.addInitScript(options.init);
-  if (options.clock) await page.clock.install({ time: options.clock });
+  if (options.clock) {
+    // Paused: time moves only with `page.clock.runFor`.
+    await page.clock.install({ time: options.clock });
+    await page.clock.pauseAt(new Date(options.clock.getTime() + 1));
+  }
   await page.goto(`${ORIGIN}/`);
   // `goto` waits for `load`. Deferred scripts and DOMContentLoaded are done.
   const { probe, violations } = await page.evaluate(() => ({

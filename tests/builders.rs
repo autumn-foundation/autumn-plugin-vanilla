@@ -1,5 +1,8 @@
 //! Typed builders write the attributes that `vanilla.js` reads.
 
+// Test helpers fail with a panic on purpose.
+#![allow(clippy::expect_used, clippy::panic)]
+
 use std::time::Duration;
 
 use autumn_plugin_vanilla::{
