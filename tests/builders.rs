@@ -216,3 +216,16 @@ fn builders_escape_markup_in_values() {
     assert!(!html.contains("<script>"), "{html}");
     assert!(html.contains("&lt;script&gt;"), "{html}");
 }
+
+#[test]
+fn local_time_renders_inline_in_maud() {
+    let at = Utc
+        .with_ymd_and_hms(2026, 1, 2, 3, 4, 5)
+        .single()
+        .expect("valid date");
+    let html = html! { p { (LocalTime::new(&at).format(TimeFormat::Time)) } }.into_string();
+    assert_eq!(
+        html,
+        r#"<p><time datetime="2026-01-02T03:04:05Z" data-vanilla="local-time" data-vanilla-local-time="time">2026-01-02 03:04 UTC</time></p>"#
+    );
+}

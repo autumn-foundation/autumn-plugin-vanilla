@@ -15,9 +15,10 @@ autumn-web = { version = "0.8", default-features = false, features = ["maud"] }
 maud = "0.27"
 
 [dev-dependencies]
-autumn-web = { version = "0.8", default-features = false, features = ["maud", "htmx"] }
+autumn-web = { version = "0.8", default-features = false, features = ["maud", "htmx", "embed-assets"] }
 base64 = "0.22"
 proptest = "1"
+serde = { version = "1", features = ["derive"] }
 sha2 = "0.10"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 

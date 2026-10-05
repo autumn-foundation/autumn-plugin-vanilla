@@ -95,18 +95,22 @@
     return el.getAttribute('data-vanilla-' + name);
   }
 
-  // All matches of a selector. An empty or invalid selector gives [].
-  function queryAll(selector) {
-    if (!selector) return [];
+  // Runs a document query. An empty or invalid selector gives fallback.
+  function select(method, selector, fallback) {
+    if (!selector) return fallback;
     try {
-      return Array.prototype.slice.call(document.querySelectorAll(selector));
+      return document[method](selector);
     } catch (err) {
-      return [];
+      return fallback;
     }
   }
 
   function query(selector) {
-    return queryAll(selector)[0] || null;
+    return select('querySelector', selector, null);
+  }
+
+  function queryAll(selector) {
+    return Array.prototype.slice.call(select('querySelectorAll', selector, []));
   }
 
   // A non-negative integer attribute in milliseconds, or 0.
