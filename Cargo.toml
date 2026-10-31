@@ -11,11 +11,11 @@ categories = ["web-programming"]
 exclude = [".github/", "docs/", "js-tests/", "package.json", "package-lock.json", "CLAUDE.md", "clippy.toml"]
 
 [dependencies]
-autumn-web = { version = "0.8", default-features = false, features = ["maud"] }
+autumn-web = { version = "0.9", default-features = false, features = ["maud"] }
 maud = "0.27"
 
 [dev-dependencies]
-autumn-web = { version = "0.8", default-features = false, features = ["maud", "htmx", "embed-assets"] }
+autumn-web = { version = "0.9", default-features = false, features = ["maud", "htmx", "embed-assets"] }
 base64 = "0.22"
 proptest = "1"
 serde = { version = "1", features = ["derive"] }

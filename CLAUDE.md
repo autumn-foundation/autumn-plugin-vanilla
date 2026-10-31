@@ -1,6 +1,6 @@
 # CLAUDE.md - autumn-plugin-vanilla
 
-Declarative vanilla JS behaviors for Autumn 0.8 apps, served through the
+Declarative vanilla JS behaviors for Autumn 0.9 apps, served through the
 `plugin_assets` seam. Read `docs/plan.md` and `docs/adr/` first.
 
 ## Layout

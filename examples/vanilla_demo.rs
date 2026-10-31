@@ -28,14 +28,16 @@ static NEXT: AtomicU32 = AtomicU32::new(1);
 
 #[autumn_web::main]
 async fn main() {
-    autumn_web::app()
-        .plugin(VanillaPlugin::new())
-        .embedded_static(&STATIC)
-        .routes(autumn_web::routes![
-            index, flash, greeting, clear, search, deleted
-        ])
-        .run()
-        .await;
+    Box::pin(
+        autumn_web::app()
+            .plugin(VanillaPlugin::new())
+            .embedded_static(&STATIC)
+            .routes(autumn_web::routes![
+                index, flash, greeting, clear, search, deleted
+            ])
+            .run(),
+    )
+    .await;
 }
 
 fn layout(content: &Markup) -> Markup {

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Support `autumn-web` 0.9. The plugin now needs `autumn-web` 0.9.
+
 ### Added
 
 - `VanillaPlugin`: installs `vanilla.js` through the autumn-web 0.8
