@@ -3,7 +3,7 @@
 Declarative vanilla JS behaviors for [Autumn](https://github.com/autumn-foundation/autumn)
 apps. No npm, no bundler, no third-party JS.
 
-- The plugin serves one small file, `vanilla.js`, through the Autumn 0.8
+- The plugin serves one small file, `vanilla.js`, through the Autumn 0.9
   `plugin_assets` seam. The file has a hashed URL, an immutable cache and SRI.
 - It works under the default CSP (`script-src 'self'`). It uses no `eval` and
   no HTML strings.
@@ -11,7 +11,7 @@ apps. No npm, no bundler, no third-party JS.
   removes content.
 - Typed Rust builders write the attributes. The builders escape all values.
 
-Requires autumn-web `0.8` and Rust 1.88.
+Requires autumn-web `0.9` and Rust 1.88.
 
 ## Quickstart
 
@@ -203,7 +203,7 @@ cargo run --example vanilla_demo
 - `assets/vanilla.js` is the runtime and the 7 behaviors.
 - `VANILLA_ASSETS` is a `PluginAssets` bundle with that one file.
   `VanillaPlugin` installs it with `AppBuilder::plugin_assets` and declares a
-  `PluginContract` for autumn-web `0.8`.
+  `PluginContract` for autumn-web `0.9`.
 - Autumn serves the file under `/static/_plugins/vanilla/`: at a hashed URL
   (`immutable`) and at a plain URL (`must-revalidate`), with `ETag`/`304`.
 - `vanilla_script()` writes the hashed URL and the computed SRI hash.

@@ -144,7 +144,7 @@ fn plugin_declares_its_contract() {
     let contract = VanillaPlugin::new().contract().expect("a contract");
     let text = format!("{contract:?}");
     assert!(text.contains("autumn-plugin-vanilla"), "{text}");
-    assert!(text.contains("0.8"), "{text}");
+    assert!(text.contains("0.9"), "{text}");
 }
 
 #[tokio::test]
