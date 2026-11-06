@@ -35,6 +35,14 @@ fn attr<'a>(html: &'a str, name: &str) -> &'a str {
     &html[start..start + len]
 }
 
+#[test]
+fn a_blank_count_output_has_no_selector() {
+    for blank in ["", " ", "\t", "\n "] {
+        let count = Count::new().output(blank).wrap(html! {}).into_string();
+        assert!(!count.contains("data-vanilla-count="), "{blank:?}: {count}");
+    }
+}
+
 proptest! {
     #[test]
     fn copy_text_round_trips(text in any::<String>()) {
@@ -82,8 +90,10 @@ proptest! {
         prop_assert_eq!(parsed, u128::from(ms).min(TIMER_MAX));
     }
 
+    // The selector has one non-space character. `Count::output` drops a
+    // blank selector, and a tab or a newline is blank too.
     #[test]
-    fn copy_selector_and_count_output_round_trip(sel in "\\PC*[^ ]\\PC*") {
+    fn copy_selector_and_count_output_round_trip(sel in "\\PC*\\S\\PC*") {
         let copy = CopyText::selector(sel.clone()).button(html! {}).into_string();
         prop_assert_eq!(&unescape(attr(&copy, "data-vanilla-copy")), &sel);
         let count = Count::new().output(sel.clone()).wrap(html! {}).into_string();
