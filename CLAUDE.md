@@ -28,6 +28,8 @@ Declarative vanilla JS behaviors for Autumn 0.10 apps, served through the
 
 ## Rules
 
+- README Rust snippets are doctests. Make them compile; use `no_run`, not `ignore`.
+  `tests/doc_snippets.rs` checks the TOML snippets and the version pins in the docs.
 - Rust and JS stay in lockstep. A new behavior needs: a `Behavior` variant,
   a builder, a `register('<name>'` call in `vanilla.js`, browser tests, and a
   README row. `tests/runtime_source.rs` checks the `register` calls.

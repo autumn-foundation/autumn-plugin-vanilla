@@ -17,43 +17,63 @@ Requires autumn-web `0.10` and Rust 1.97.
 
 Add the plugin:
 
-```rust
+```rust,no_run
 use autumn_plugin_vanilla::VanillaPlugin;
+use autumn_web::prelude::*;
 
-autumn_web::app()
-    .plugin(VanillaPlugin::new())
-    .run()
-    .await;
+#[get("/")]
+async fn index() -> &'static str {
+    "Hello"
+}
+
+#[autumn_web::main]
+async fn main() {
+    autumn_web::app()
+        .plugin(VanillaPlugin::new())
+        .routes(routes![index])
+        .run()
+        .await;
+}
 ```
 
 Put the script in the page `<head>`. The tag has `defer` and an SRI hash:
 
 ```rust
 use autumn_plugin_vanilla::vanilla_script;
+use autumn_web::prelude::*;
 
-html! { head { (vanilla_script()) } }
+fn head() -> Markup {
+    html! { head { (vanilla_script()) } }
+}
 ```
 
 Use a builder:
 
 ```rust
 use autumn_plugin_vanilla::{CopyText, Toggle};
+use autumn_web::prelude::*;
 
-html! {
-    label for="api-key" { "API key" }
-    input id="api-key" value=(key) readonly;
-    (CopyText::selector("#api-key").button(html! { "Copy" }))
+fn settings(key: &str) -> Markup {
+    html! {
+        label for="api-key" { "API key" }
+        input id="api-key" value=(key) readonly;
+        (CopyText::selector("#api-key").button(html! { "Copy" }))
 
-    (Toggle::target("#menu").attr("class", "btn").button(html! { "Menu" }))
-    nav id="menu" hidden { … }
+        (Toggle::target("#menu").attr("class", "btn").button(html! { "Menu" }))
+        nav id="menu" hidden { a href="/account" { "Account" } }
+    }
 }
 ```
 
 Or write the attributes yourself:
 
 ```rust
-html! {
-    button type="button" data-vanilla="copy" data-vanilla-copy="#api-key" { "Copy" }
+use autumn_web::prelude::*;
+
+fn copy_button() -> Markup {
+    html! {
+        button type="button" data-vanilla="copy" data-vanilla-copy="#api-key" { "Copy" }
+    }
 }
 ```
 
@@ -165,10 +185,15 @@ Vanilla.register('greet', (el) => {
 ```
 
 ```rust
-html! {
-    head {
-        (vanilla_script())
-        script src=(asset_url("js/app.js")) defer {}
+use autumn_plugin_vanilla::vanilla_script;
+use autumn_web::prelude::*;
+
+fn head() -> Markup {
+    html! {
+        head {
+            (vanilla_script())
+            script src=(asset_url("js/app.js")) defer {}
+        }
     }
 }
 ```
