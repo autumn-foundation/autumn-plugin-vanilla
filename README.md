@@ -3,7 +3,7 @@
 Declarative vanilla JS behaviors for [Autumn](https://github.com/autumn-foundation/autumn)
 apps. No npm, no bundler, no third-party JS.
 
-- The plugin serves one small file, `vanilla.js`, through the Autumn 0.9
+- The plugin serves one small file, `vanilla.js`, through the Autumn 0.10
   `plugin_assets` seam. The file has a hashed URL, an immutable cache and SRI.
 - It works under the default CSP (`script-src 'self'`). It uses no `eval` and
   no HTML strings.
@@ -11,7 +11,7 @@ apps. No npm, no bundler, no third-party JS.
   removes content.
 - Typed Rust builders write the attributes. The builders escape all values.
 
-Requires autumn-web `0.9` and Rust 1.88.
+Requires autumn-web `0.10` and Rust 1.97.
 
 ## Quickstart
 
