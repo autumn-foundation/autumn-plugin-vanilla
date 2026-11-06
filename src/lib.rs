@@ -60,3 +60,8 @@ pub use behaviors::{
 pub use markup::Attributes;
 pub use plugin::{PLUGIN_NAME, VanillaPlugin};
 pub use script::vanilla_script;
+
+/// Compiles the Rust snippets of the README as doctests.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
