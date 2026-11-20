@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use autumn_plugin_vanilla::{AutoSubmit, Confirm, CopyText, Count, Dismiss, LocalTime, Toggle};
 use autumn_web::html;
-use autumn_web::reexports::chrono::{TimeZone as _, Utc};
+use autumn_web::time::Timestamp;
 use proptest::prelude::*;
 
 const TIMER_MAX: u128 = 2_147_483_647;
@@ -102,8 +102,8 @@ proptest! {
 
     #[test]
     fn local_time_fallback_is_escaped(text in any::<String>()) {
-        let at = Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).single().expect("valid date");
-        let html = LocalTime::new(&at).fallback(text.clone()).render().into_string();
+        let at: Timestamp = "2026-01-01T00:00:00Z".parse().expect("valid date");
+        let html = LocalTime::new(at).fallback(text.clone()).render().into_string();
         let start = html.find('>').expect("open tag") + 1;
         let inner = &html[start..html.len() - "</time>".len()];
         prop_assert!(!inner.contains('<'));

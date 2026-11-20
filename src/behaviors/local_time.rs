@@ -1,6 +1,6 @@
 use autumn_web::Markup;
 use autumn_web::html;
-use autumn_web::reexports::chrono::{DateTime, SecondsFormat, TimeZone, Utc};
+use autumn_web::time::Timestamp;
 
 use super::{Behavior, marker};
 use crate::markup::{Attributes, common, element};
@@ -16,20 +16,21 @@ use crate::markup::{Attributes, common, element};
 /// To format many `<time datetime>` elements, put
 /// `data-vanilla=(Behavior::LocalTime)` on a container.
 ///
-/// The type uses chrono through `autumn_web::reexports::chrono`.
+/// The type uses jiff through `autumn_web::time`. A `Zoned` time also works:
+/// [`LocalTime::new`] takes anything that converts to a `Timestamp`.
 ///
 /// ```rust
 /// use autumn_plugin_vanilla::{LocalTime, TimeFormat};
-/// use autumn_web::reexports::chrono::{TimeZone as _, Utc};
+/// use autumn_web::time::Timestamp;
 ///
-/// let at = Utc.with_ymd_and_hms(2026, 10, 5, 12, 0, 0).unwrap();
-/// let html = LocalTime::new(&at).format(TimeFormat::Date).render().into_string();
+/// let at: Timestamp = "2026-10-05T12:00:00Z".parse().unwrap();
+/// let html = LocalTime::new(at).format(TimeFormat::Date).render().into_string();
 /// assert!(html.starts_with(r#"<time datetime="2026-10-05T12:00:00Z""#), "{html}");
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[must_use]
 pub struct LocalTime {
-    at: DateTime<Utc>,
+    at: Timestamp,
     format: TimeFormat,
     fallback: Option<String>,
     extra: Attributes,
@@ -74,9 +75,9 @@ impl TimeFormat {
 
 impl LocalTime {
     /// Shows `at`. It converts any time zone to UTC for `datetime`.
-    pub fn new<Tz: TimeZone>(at: &DateTime<Tz>) -> Self {
+    pub fn new(at: impl Into<Timestamp>) -> Self {
         Self {
-            at: at.with_timezone(&Utc),
+            at: at.into(),
             format: TimeFormat::DateTime,
             fallback: None,
             extra: Vec::new(),
@@ -102,7 +103,7 @@ impl LocalTime {
         let mut attributes = vec![
             (
                 "datetime",
-                self.at.to_rfc3339_opts(SecondsFormat::Secs, true),
+                self.at.strftime("%Y-%m-%dT%H:%M:%SZ").to_string(),
             ),
             marker(Behavior::LocalTime),
         ];
@@ -119,7 +120,7 @@ impl LocalTime {
         let text = self
             .fallback
             .clone()
-            .unwrap_or_else(|| self.at.format(self.format.pattern()).to_string());
+            .unwrap_or_else(|| self.at.strftime(self.format.pattern()).to_string());
         element("time", &self.attributes(), html! { (text) })
     }
 }

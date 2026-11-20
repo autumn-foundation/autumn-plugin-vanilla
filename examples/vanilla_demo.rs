@@ -18,7 +18,6 @@ use autumn_plugin_vanilla::{
     VanillaPlugin, vanilla_script,
 };
 use autumn_web::assets::asset_url;
-use autumn_web::reexports::chrono::Utc;
 use autumn_web::{Markup, html};
 
 static STATIC: autumn_web::include_dir::Dir = autumn_web::embed_static!();
@@ -61,7 +60,7 @@ fn layout(content: &Markup) -> Markup {
 
 #[autumn_web::get("/")]
 async fn index() -> Markup {
-    let now = Utc::now();
+    let now = autumn_web::time::Timestamp::now();
     layout(&html! {
         h1 { "autumn-plugin-vanilla" }
 
@@ -146,8 +145,8 @@ async fn index() -> Markup {
 
         section id="local-time" {
             h2 { "local-time" }
-            p { "Page rendered " (LocalTime::new(&now).format(TimeFormat::Relative)) "." }
-            p { "Exact: " (LocalTime::new(&now)) }
+            p { "Page rendered " (LocalTime::new(now).format(TimeFormat::Relative)) "." }
+            p { "Exact: " (LocalTime::new(now)) }
         }
     })
 }

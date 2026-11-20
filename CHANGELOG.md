@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-20
+
+### Changed
+
+- **Breaking:** Support `autumn-web` 0.11. The plugin now needs `autumn-web`
+  0.11. Apps on `autumn-web` 0.10 stay on 0.3.0.
+- **Breaking:** `LocalTime::new` takes `impl Into<Timestamp>` (jiff, through
+  `autumn_web::time`), not a chrono `&DateTime`. autumn-web 0.11 has no
+  chrono. Pass a `Timestamp` or a `Zoned`. The markup does not change.
+
 ## [0.3.0] - 2026-11-06
 
 ### Changed

@@ -29,7 +29,7 @@ Ideas, not filtered:
    `autocomplete`, `infinite-scroll`, `theme-switch`, `print`,
    `share`, `password-reveal`.
 6. Typed Rust builders with `.wrap(markup)` and `.button(markup)`.
-7. `LocalTime` takes a typed `chrono::DateTime`.
+7. `LocalTime` takes a typed `jiff` time (`autumn_web::time::Timestamp`).
 8. Real-browser tests with Playwright and Chromium.
 9. An end-to-end test: real Autumn server, default CSP, SRI, browser.
 10. A CSS file with default styles.

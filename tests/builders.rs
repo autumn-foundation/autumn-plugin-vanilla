@@ -10,7 +10,7 @@ use autumn_plugin_vanilla::{
     Toggle,
 };
 use autumn_web::html;
-use autumn_web::reexports::chrono::{FixedOffset, TimeZone as _, Utc};
+use autumn_web::time::{Timestamp, tz::Offset};
 
 #[test]
 fn behavior_names_match_the_runtime() {
@@ -168,9 +168,8 @@ fn count_with_an_output_selector() {
 
 #[test]
 fn local_time_renders_a_time_element_in_utc() {
-    let at = Utc.with_ymd_and_hms(2026, 10, 5, 12, 0, 0).single();
-    let at = at.expect("valid date");
-    let html = LocalTime::new(&at).render().into_string();
+    let at: Timestamp = "2026-10-05T12:00:00Z".parse().expect("valid date");
+    let html = LocalTime::new(at).render().into_string();
     assert_eq!(
         html,
         r#"<time datetime="2026-10-05T12:00:00Z" data-vanilla="local-time">2026-10-05 12:00 UTC</time>"#
@@ -179,12 +178,10 @@ fn local_time_renders_a_time_element_in_utc() {
 
 #[test]
 fn local_time_converts_offsets_to_utc_and_sets_a_format() {
-    let offset = FixedOffset::east_opt(2 * 3600).expect("valid offset");
-    let at = offset
-        .with_ymd_and_hms(2026, 10, 5, 14, 30, 0)
-        .single()
-        .expect("valid date");
-    let html = LocalTime::new(&at)
+    // 14:30 at UTC+2 is 12:30 UTC.
+    let local = autumn_web::time::civil::date(2026, 10, 5).at(14, 30, 0, 0);
+    let at = Offset::constant(2).to_timestamp(local).expect("valid date");
+    let html = LocalTime::new(at)
         .format(TimeFormat::Relative)
         .fallback("today")
         .render()
@@ -220,11 +217,8 @@ fn builders_escape_markup_in_values() {
 
 #[test]
 fn local_time_renders_inline_in_maud() {
-    let at = Utc
-        .with_ymd_and_hms(2026, 1, 2, 3, 4, 5)
-        .single()
-        .expect("valid date");
-    let html = html! { p { (LocalTime::new(&at).format(TimeFormat::Time)) } }.into_string();
+    let at: Timestamp = "2026-01-02T03:04:05Z".parse().expect("valid date");
+    let html = html! { p { (LocalTime::new(at).format(TimeFormat::Time)) } }.into_string();
     assert_eq!(
         html,
         r#"<p><time datetime="2026-01-02T03:04:05Z" data-vanilla="local-time" data-vanilla-local-time="time">03:04 UTC</time></p>"#
@@ -324,12 +318,9 @@ fn dismiss_focus_target_and_sub_millisecond_timer() {
 
 #[test]
 fn local_time_fallback_matches_the_format() {
-    let at = Utc
-        .with_ymd_and_hms(2026, 10, 5, 12, 0, 0)
-        .single()
-        .expect("valid date");
+    let at: Timestamp = "2026-10-05T12:00:00Z".parse().expect("valid date");
     let text = |format| {
-        let html = LocalTime::new(&at).format(format).render().into_string();
+        let html = LocalTime::new(at).format(format).render().into_string();
         let start = html.find('>').expect("open tag") + 1;
         html[start..html.len() - "</time>".len()].to_owned()
     };
