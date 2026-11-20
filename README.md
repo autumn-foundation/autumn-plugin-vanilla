@@ -3,7 +3,7 @@
 Declarative vanilla JS behaviors for [Autumn](https://github.com/autumn-foundation/autumn)
 apps. No npm, no bundler, no third-party JS.
 
-- The plugin serves one small file, `vanilla.js`, through the Autumn 0.10
+- The plugin serves one small file, `vanilla.js`, through the Autumn 0.11
   `plugin_assets` seam. The file has a hashed URL, an immutable cache and SRI.
 - It works under the default CSP (`script-src 'self'`). It uses no `eval` and
   no HTML strings.
@@ -11,7 +11,7 @@ apps. No npm, no bundler, no third-party JS.
   removes content.
 - Typed Rust builders write the attributes. The builders escape all values.
 
-Requires autumn-web `0.10` and Rust 1.97.
+Requires autumn-web `0.11` and Rust 1.97.
 
 ## Quickstart
 
@@ -91,7 +91,7 @@ element. One element can have many behaviors:
 | `confirm` | `Confirm::new(msg)` | Asks before a form submits, a link opens, or an htmx element sends a request. |
 | `autosubmit` | `AutoSubmit::new().on_input().delay(d)` | Submits the form when a field changes. |
 | `count` | `Count::new().mode(m).output(sel)` | Shows the character count of a field. |
-| `local-time` | `LocalTime::new(&dt).format(f)` | Shows a `<time>` in the browser locale and time zone. |
+| `local-time` | `LocalTime::new(at).format(f)` | Shows a `<time>` in the browser locale and time zone. |
 
 All builders have `attributes()` and `attr(name, value)` for extra
 attributes (`id`, `class`, `aria-label`, …). `attr` refuses event handler
